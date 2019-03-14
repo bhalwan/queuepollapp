@@ -1,13 +1,13 @@
 import boto3
-from boto3_type_annotations.sqs import Client
 import time
 import uuid
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 import json
+import sys
 
 QUEUE_URL = 'https://sqs.us-east-2.amazonaws.com/334146420596/bhalwan-test-queue1.fifo'
-FOLDER_PATH = "/home/ec2-user/pythonapp"
+FOLDER_PATH = "/home/ec2-user/pythonapp/messages/"
 FILE_PATH = FOLDER_PATH+"/message_config.json"
 
 class MyHandler(PatternMatchingEventHandler):
@@ -18,7 +18,10 @@ class MyHandler(PatternMatchingEventHandler):
         with open(FILE_PATH) as f:
             data = json.load(f)
             for message in data["portfolios"]:
-                write_message(message)
+                try:
+                    write_message(message)
+                except:
+                    print("Unexpected error. Can't publish message :"+message, sys.exc_info()[0])
 
 
 def main():
@@ -35,7 +38,7 @@ def main():
 
 def write_message(message_body: str):
     # get the number of messages on the queue
-    sqs: Client = boto3.client('sqs', 'us-east-2')
+    sqs = boto3.client('sqs', 'us-east-2')
     print("Sending Message " + message_body)
     deDuplicationId = str(uuid.uuid1().bytes)
     print(deDuplicationId)
